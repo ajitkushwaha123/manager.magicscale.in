@@ -3,7 +3,6 @@
 import * as React from "react";
 import { format, addMonths } from "date-fns";
 import { CalendarIcon } from "lucide-react";
-
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -137,6 +136,7 @@ export function AgreementSheet({ onSubmit }) {
     targetUpperBound: 50000,
     duration: "1",
     services: "both",
+    fee: 7000,
   });
 
   const [payment, setPayment] = React.useState({
@@ -191,12 +191,24 @@ export function AgreementSheet({ onSubmit }) {
               Agreement Details
             </h3>
 
-            {/* Agreement Date */}
             <DateSelector
               label="Agreement Date"
               date={agreement.date}
               onChange={(date) => setAgreement({ ...agreement, date })}
             />
+
+            {/* Fee Field */}
+            <div className="mt-4 flex flex-col space-y-1.5">
+              <Label>Fee (₹)</Label>
+              <Input
+                type="number"
+                value={agreement.fee}
+                placeholder="Enter fee amount"
+                onChange={(e) =>
+                  setAgreement({ ...agreement, fee: Number(e.target.value) })
+                }
+              />
+            </div>
 
             {/* Duration Range */}
             <div className="mt-4 flex flex-col space-y-1.5">
@@ -247,35 +259,32 @@ export function AgreementSheet({ onSubmit }) {
             <div className="mt-6 flex flex-col space-y-1.5">
               <Label>Target Range (₹)</Label>
               <div className="flex gap-2">
-                {[
-                  {
-                    key: "targetLowerBound",
-                    placeholder: "Lower bound",
-                    value: agreement.targetLowerBound,
-                  },
-                  {
-                    key: "targetUpperBound",
-                    placeholder: "Upper bound",
-                    value: agreement.targetUpperBound,
-                  },
-                ].map((f) => (
-                  <Input
-                    key={f.key}
-                    type="number"
-                    value={f.value}
-                    placeholder={f.placeholder}
-                    onChange={(e) =>
-                      setAgreement({
-                        ...agreement,
-                        [f.key]: Number(e.target.value),
-                      })
-                    }
-                  />
-                ))}
+                <Input
+                  type="number"
+                  value={agreement.targetLowerBound}
+                  placeholder="Lower bound"
+                  onChange={(e) =>
+                    setAgreement({
+                      ...agreement,
+                      targetLowerBound: Number(e.target.value),
+                    })
+                  }
+                />
+                <Input
+                  type="number"
+                  value={agreement.targetUpperBound}
+                  placeholder="Upper bound"
+                  onChange={(e) =>
+                    setAgreement({
+                      ...agreement,
+                      targetUpperBound: Number(e.target.value),
+                    })
+                  }
+                />
               </div>
             </div>
 
-            {/* Duration & Services (side by side) */}
+            {/* Duration & Services */}
             <div className="flex flex-col sm:flex-row gap-4">
               <SelectField
                 label="Duration Label"
@@ -286,7 +295,6 @@ export function AgreementSheet({ onSubmit }) {
                 options={durationOptions}
                 className="sm:w-1/2"
               />
-
               <SelectField
                 label="Services"
                 value={agreement.services}
