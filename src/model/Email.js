@@ -1,15 +1,13 @@
 import mongoose from "mongoose";
 
-const { Schema } = mongoose;
-
-const emailSchema = new Schema(
+const emailSchema = new mongoose.Schema(
   {
     userId: {
       type: String,
       required: true,
     },
     conversationId: {
-      type: Schema.Types.ObjectId,
+      type: mongoose.Schema.Types.ObjectId,
       ref: "Conversation",
       required: true,
     },

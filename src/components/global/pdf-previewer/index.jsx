@@ -3,7 +3,7 @@
 import { PDFViewer } from "@react-pdf/renderer";
 import MagicScaleAgreementPDF from "@/components/document";
 
-export default function PDFPreviewer({ company, client, agreement }) {
+export default function PDFPreviewer({ company, client, agreement, payment }) {
   return (
     <div className="w-full h-full">
       <PDFViewer width="100%" height="100%">
@@ -11,6 +11,7 @@ export default function PDFPreviewer({ company, client, agreement }) {
           company={company}
           client={client}
           agreement={agreement}
+          payment={payment}
         />
       </PDFViewer>
     </div>

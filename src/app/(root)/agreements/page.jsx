@@ -15,6 +15,7 @@ const PDFPreviewer = dynamic(
   }
 );
 
+// Utility: formats date with suffix (1st, 2nd, 3rd, etc.)
 function formatWithSuffix(date) {
   const day = date.getDate();
   const suffix =
@@ -45,7 +46,13 @@ export default function AgreementPreviewPage() {
         new Date().getMonth() + 1
       )
     ),
-    duration: 1,
+
+    targetLowerBound: 60000,
+    targetUpperBound: 80000,
+    duration: "1",
+    services: "zomato",
+    fee: 7000,
+    paymentTerms: "advance",
   });
 
   const handleAgreementSubmit = async (data) => {
@@ -54,13 +61,14 @@ export default function AgreementPreviewPage() {
   };
 
   const formattedAgreement = {
+    ...agreement,
     date: format(agreement.date, "dd MMM yyyy").toUpperCase(),
     start: formatWithSuffix(agreement.start),
     end: formatWithSuffix(agreement.end),
   };
 
   const COMPANY = {
-    name: "Magic Scale",
+    name: "Magicscale Restaurant Consultancy Services",
     logo: "/assets/logo.png",
     address: "Near Air Force Camp, Rajokari, 110038",
     phone: "+91 8826073117",
@@ -70,23 +78,32 @@ export default function AgreementPreviewPage() {
     signature: "/assets/signature.png",
   };
 
-  const handleDownload = async () => {
-    setDownloading(true);
-    const blob = await pdf(
-      <MagicScaleAgreementPDF
-        company={COMPANY}
-        client={client}
-        agreement={formattedAgreement}
-      />
-    ).toBlob();
+  const [payment, setPayment] = useState({
+    term: "advance",
+    firstHalf: "50",
+    secondHalf: "50",
+  });
 
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `${client.name}-Service-Agreement.pdf`;
-    link.click();
-    URL.revokeObjectURL(url);
-    setDownloading(false);
+  const handleDownload = async () => {
+    try {
+      setDownloading(true);
+      const blob = await pdf(
+        <MagicScaleAgreementPDF
+          company={COMPANY}
+          client={client}
+          agreement={formattedAgreement}
+        />
+      ).toBlob();
+
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${client.name}-Service-Agreement.pdf`;
+      link.click();
+      URL.revokeObjectURL(url);
+    } finally {
+      setDownloading(false);
+    }
   };
 
   return (
@@ -113,6 +130,7 @@ export default function AgreementPreviewPage() {
           company={COMPANY}
           client={client}
           agreement={formattedAgreement}
+          payment={payment}
         />
       </div>
     </div>

@@ -1,8 +1,9 @@
 "use client";
 
 import * as React from "react";
-import { format } from "date-fns";
+import { format, addMonths } from "date-fns";
 import { CalendarIcon } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -22,6 +23,98 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
+
+import {
+  clientFields,
+  durationOptions,
+  serviceOptions,
+  paymentTerms,
+} from "@/constants/agreement";
+
+function ClientFieldsSection({ client, setClient }) {
+  return (
+    <section>
+      <h3 className="text-sm font-semibold text-muted-foreground uppercase mb-3">
+        Client Information
+      </h3>
+      <div className="space-y-4">
+        {clientFields.map(({ key, label, placeholder }) => (
+          <div key={key} className="flex flex-col space-y-1.5">
+            <Label htmlFor={key}>{label}</Label>
+            <Input
+              id={key}
+              value={client[key]}
+              placeholder={placeholder}
+              onChange={(e) =>
+                setClient({
+                  ...client,
+                  [key]: e.target.value,
+                })
+              }
+            />
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function DateSelector({ label, date, onChange }) {
+  return (
+    <div className="flex flex-col space-y-1.5">
+      {label && <Label>{label}</Label>}
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            className={cn(
+              "w-full justify-start text-left font-normal",
+              !date && "text-muted-foreground"
+            )}
+          >
+            <CalendarIcon className="mr-2 h-4 w-4" />
+            {date ? format(date, "PPP") : "Pick a date"}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent align="start" className="p-0">
+          <Calendar
+            mode="single"
+            selected={date}
+            onSelect={(d) => d && onChange(d)}
+            initialFocus
+          />
+        </PopoverContent>
+      </Popover>
+    </div>
+  );
+}
+
+function SelectField({ label, value, onValueChange, options, className }) {
+  return (
+    <div className={cn("mt-6 flex flex-col space-y-1.5", className)}>
+      <Label>{label}</Label>
+      <Select value={value} onValueChange={onValueChange}>
+        <SelectTrigger>
+          <SelectValue placeholder={`Select ${label.toLowerCase()}`} />
+        </SelectTrigger>
+        <SelectContent>
+          {options.map((opt) => (
+            <SelectItem key={opt.value} value={opt.value}>
+              {opt.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}
 
 export function AgreementSheet({ onSubmit }) {
   const [open, setOpen] = React.useState(false);
@@ -34,19 +127,37 @@ export function AgreementSheet({ onSubmit }) {
   });
 
   const today = new Date();
-  const threeDaysLater = new Date(today);
-  threeDaysLater.setDate(today.getDate() + 3);
+  const startDate = new Date(today.setDate(today.getDate() + 3));
 
   const [agreement, setAgreement] = React.useState({
-    date: today,
-    start: threeDaysLater,
-    end: new Date(
-      new Date(threeDaysLater).setMonth(threeDaysLater.getMonth() + 1)
-    ),
+    date: new Date(),
+    start: startDate,
+    end: addMonths(startDate, 1),
+    targetLowerBound: 40000,
+    targetUpperBound: 50000,
+    duration: "1",
+    services: "both",
   });
 
+  const [payment, setPayment] = React.useState({
+    term: "advance",
+    firstHalf: "50%",
+    secondHalf: "50%",
+  });
+
+  const extendEndDate = (months) =>
+    setAgreement({ ...agreement, end: addMonths(agreement.start, months) });
+
   const handleSave = () => {
-    onSubmit?.({ client, agreement });
+    if (
+      payment.term === "partial" &&
+      Number(payment.firstHalf) + Number(payment.secondHalf) !== 100
+    ) {
+      alert("Partial payments must total 100%");
+      return;
+    }
+
+    onSubmit?.({ client, agreement, payment });
     setOpen(false);
   };
 
@@ -58,168 +169,187 @@ export function AgreementSheet({ onSubmit }) {
         </Button>
       </SheetTrigger>
 
-      <SheetContent
-        className="flex flex-col h-full px-4 pb-20" // enough bottom space for sticky buttons
-      >
-        {/* Header */}
+      <SheetContent className="flex flex-col h-full px-4 pb-20">
         <SheetHeader className="pb-3">
           <SheetTitle className="text-lg font-semibold text-gray-900 dark:text-gray-100">
             Agreement Details
           </SheetTitle>
           <SheetDescription>
-            Set the client and agreement duration below.
+            Configure the client and agreement duration below.
           </SheetDescription>
         </SheetHeader>
 
         <Separator className="mb-5" />
 
-        {/* Scrollable content */}
         <div className="flex-1 overflow-y-auto pr-1 space-y-8">
           {/* Client Section */}
-          <section>
-            <h3 className="text-sm font-semibold text-muted-foreground uppercase mb-3">
-              Client Information
-            </h3>
-
-            <div className="space-y-4">
-              <div className="flex flex-col space-y-1.5">
-                <Label htmlFor="name">Client Name</Label>
-                <Input
-                  id="name"
-                  value={client.name}
-                  onChange={(e) =>
-                    setClient({ ...client, name: e.target.value })
-                  }
-                  placeholder="Enter client name"
-                />
-              </div>
-
-              <div className="flex flex-col space-y-1.5">
-                <Label htmlFor="address">Address</Label>
-                <Input
-                  id="address"
-                  value={client.address}
-                  onChange={(e) =>
-                    setClient({ ...client, address: e.target.value })
-                  }
-                  placeholder="Enter address"
-                />
-              </div>
-
-              <div className="flex flex-col space-y-1.5">
-                <Label htmlFor="representative">Representative</Label>
-                <Input
-                  id="representative"
-                  value={client.representative}
-                  onChange={(e) =>
-                    setClient({ ...client, representative: e.target.value })
-                  }
-                  placeholder="Representative name"
-                />
-              </div>
-            </div>
-          </section>
+          <ClientFieldsSection client={client} setClient={setClient} />
 
           {/* Agreement Section */}
           <section>
             <h3 className="text-sm font-semibold text-muted-foreground uppercase mb-3">
-              Agreement Duration
+              Agreement Details
             </h3>
 
             {/* Agreement Date */}
-            <div className="flex flex-col space-y-1.5">
-              <Label>Agreement Date</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !agreement.date && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {agreement.date
-                      ? format(agreement.date, "PPP")
-                      : "Pick agreement date"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent align="start" className="p-0">
-                  <Calendar
-                    mode="single"
-                    selected={agreement.date}
-                    onSelect={(date) =>
-                      date && setAgreement({ ...agreement, date })
-                    }
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
+            <DateSelector
+              label="Agreement Date"
+              date={agreement.date}
+              onChange={(date) => setAgreement({ ...agreement, date })}
+            />
 
             {/* Duration Range */}
             <div className="mt-4 flex flex-col space-y-1.5">
               <Label>Duration Range</Label>
               <div className="flex flex-col gap-2">
-                <label className="text-sm text-muted-foreground">
-                  Select the start date
-                </label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className="flex-1 justify-start text-left font-normal"
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {agreement.start
-                        ? format(agreement.start, "PPP")
-                        : "Start date"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent align="start" className="p-0 w-auto">
-                    <Calendar
-                      mode="single"
-                      selected={agreement.start}
-                      onSelect={(date) =>
-                        date && setAgreement({ ...agreement, start: date })
-                      }
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
+                <span className="text-sm text-muted-foreground">
+                  Start Date
+                </span>
+                <DateSelector
+                  date={agreement.start}
+                  onChange={(date) =>
+                    setAgreement({ ...agreement, start: date })
+                  }
+                />
 
-                <label className="text-sm text-muted-foreground">
-                  Select the end date
-                </label>
-                <Popover>
-                  <PopoverTrigger asChild>
+                <span className="text-sm text-muted-foreground mt-2">
+                  End Date
+                </span>
+                <div className="flex flex-col sm:flex-row flex-wrap gap-2">
+                  {[1, 2, 3].map((m) => (
                     <Button
-                      variant="outline"
-                      className="flex-1 justify-start text-left font-normal"
+                      key={m}
+                      variant="secondary"
+                      className="flex-1"
+                      onClick={() => extendEndDate(m)}
                     >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {agreement.end
-                        ? format(agreement.end, "PPP")
-                        : "End date"}
+                      +{m} Month{m > 1 && "s"}
                     </Button>
-                  </PopoverTrigger>
-                  <PopoverContent align="start" className="p-0 w-auto">
-                    <Calendar
-                      mode="single"
-                      selected={agreement.end}
-                      onSelect={(date) =>
-                        date && setAgreement({ ...agreement, end: date })
-                      }
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
+                  ))}
+                  <DateSelector
+                    date={agreement.end}
+                    onChange={(date) =>
+                      setAgreement({ ...agreement, end: date })
+                    }
+                  />
+                </div>
+
+                <p className="text-xs text-muted-foreground mt-1">
+                  Current end date:{" "}
+                  <span className="font-medium text-foreground">
+                    {format(agreement.end, "PPP")}
+                  </span>
+                </p>
               </div>
+            </div>
+
+            {/* Target Range */}
+            <div className="mt-6 flex flex-col space-y-1.5">
+              <Label>Target Range (₹)</Label>
+              <div className="flex gap-2">
+                {[
+                  {
+                    key: "targetLowerBound",
+                    placeholder: "Lower bound",
+                    value: agreement.targetLowerBound,
+                  },
+                  {
+                    key: "targetUpperBound",
+                    placeholder: "Upper bound",
+                    value: agreement.targetUpperBound,
+                  },
+                ].map((f) => (
+                  <Input
+                    key={f.key}
+                    type="number"
+                    value={f.value}
+                    placeholder={f.placeholder}
+                    onChange={(e) =>
+                      setAgreement({
+                        ...agreement,
+                        [f.key]: Number(e.target.value),
+                      })
+                    }
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Duration & Services (side by side) */}
+            <div className="flex flex-col sm:flex-row gap-4">
+              <SelectField
+                label="Duration Label"
+                value={agreement.duration}
+                onValueChange={(value) =>
+                  setAgreement({ ...agreement, duration: value })
+                }
+                options={durationOptions}
+                className="sm:w-1/2"
+              />
+
+              <SelectField
+                label="Services"
+                value={agreement.services}
+                onValueChange={(value) =>
+                  setAgreement({ ...agreement, services: value })
+                }
+                options={serviceOptions}
+                className="sm:w-1/2"
+              />
+            </div>
+
+            {/* Payment Terms */}
+            <div className="mt-6 flex flex-col space-y-1.5">
+              <Label>Payment Terms</Label>
+              <Select
+                value={payment.term}
+                onValueChange={(value) =>
+                  setPayment({ ...payment, term: value })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select payment term" />
+                </SelectTrigger>
+                <SelectContent>
+                  {paymentTerms.map((term) => (
+                    <SelectItem key={term.value} value={term.value}>
+                      {term.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {payment.term === "partial" && (
+                <div className="mt-4 flex flex-col sm:flex-row gap-4">
+                  <div className="flex-1">
+                    <Label>First Half (%)</Label>
+                    <Input
+                      type="number"
+                      value={payment.firstHalf}
+                      placeholder="e.g. 50"
+                      onChange={(e) =>
+                        setPayment({ ...payment, firstHalf: e.target.value })
+                      }
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <Label>Second Half (%)</Label>
+                    <Input
+                      type="number"
+                      value={payment.secondHalf}
+                      placeholder="e.g. 50"
+                      onChange={(e) =>
+                        setPayment({ ...payment, secondHalf: e.target.value })
+                      }
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           </section>
         </div>
 
-        {/* Sticky footer with actions */}
+        {/* Footer */}
         <div className="absolute bottom-0 left-0 right-0 border-t bg-background px-4 py-3 flex gap-2">
           <Button
             variant="outline"

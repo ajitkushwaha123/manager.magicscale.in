@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import Conversation from "@/model/Conversation";
 import dbConnect from "@/lib/dbConnect";
+import Email from "@/model/Email";
 
 export const GET = async (req) => {
   try {

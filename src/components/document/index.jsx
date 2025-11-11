@@ -1,4 +1,5 @@
 "use client";
+import { getAmount, getDurationLabel } from "@/constants/agreement";
 import {
   Document,
   Page,
@@ -122,8 +123,12 @@ function CommonFooter() {
   );
 }
 
-// 🔹 Main PDF Component
-export default function MagicScaleAgreementPDF({ company, client, agreement }) {
+export default function MagicScaleAgreementPDF({
+  company,
+  client,
+  agreement,
+  payment,
+}) {
   return (
     <Document
       title="Consultant Agreement"
@@ -197,7 +202,6 @@ export default function MagicScaleAgreementPDF({ company, client, agreement }) {
               "Restaurant onboarding and account setup on Zomato and Swiggy.",
               "Menu analysis, optimization, and pricing strategy.",
               "Marketing and promotional strategy implementation.",
-              "Operational efficiency improvements and cost control measures.",
               "Weekly performance tracking and reporting.",
             ].map((item, i) => (
               <View style={styles.bulletItem} key={i}>
@@ -209,11 +213,29 @@ export default function MagicScaleAgreementPDF({ company, client, agreement }) {
 
           <Text style={styles.paragraph}>
             The Consultant’s services aim to achieve a{" "}
-            <Text style={styles.blueBold}>monthly sales growth target</Text>{" "}
-            between <Text style={styles.blueBold}>₹60,000 – ₹70,000</Text>{" "}
-            (through <Text style={styles.blueBold}>Zomato</Text> and{" "}
-            <Text style={styles.blueBold}>Swiggy</Text> combined), compared to
-            the previous month’s performance.
+            <Text style={styles.blueBold}>
+              {getDurationLabel(agreement.duration)} sales growth target
+            </Text>{" "}
+            between{" "}
+            <Text style={styles.blueBold}>
+              ₹{agreement.targetLowerBound.toLocaleString()} – ₹
+              {agreement.targetUpperBound.toLocaleString()}
+            </Text>{" "}
+            {agreement.services === "both" ? (
+              <>
+                (through <Text style={styles.blueBold}>Zomato</Text> and{" "}
+                <Text style={styles.blueBold}>Swiggy</Text> combined)
+              </>
+            ) : agreement.services === "zomato" ? (
+              <>
+                (through <Text style={styles.blueBold}>Zomato</Text> only)
+              </>
+            ) : (
+              <>
+                (through <Text style={styles.blueBold}>Swiggy</Text> only)
+              </>
+            )}
+            , compared to the previous month’s performance.
           </Text>
 
           <Text style={styles.paragraph}>
@@ -225,7 +247,6 @@ export default function MagicScaleAgreementPDF({ company, client, agreement }) {
         <CommonFooter />
       </Page>
 
-      {/* PAGE 2 */}
       <Page size="A4" style={styles.page}>
         <CommonHeader date={agreement.date} company={company} client={client} />
 
@@ -251,48 +272,57 @@ export default function MagicScaleAgreementPDF({ company, client, agreement }) {
           <Text style={styles.paragraph}>
             The Client agrees to pay the Consultant a{" "}
             <Text style={styles.blueBold}>
-              monthly service fee of INR 5,000
-            </Text>{" "}
-            (<Text style={styles.blackBold}>Rupees Five Thousand Only</Text>).
+              monthly service fee of {getAmount(agreement.fee)}
+            </Text>
           </Text>
           <Text style={[styles.paragraph, styles.blackBold]}>
             Payment Terms:
           </Text>
           <View style={styles.bulletList}>
-            {" "}
+            {payment.term === "partial" ? (
+              <>
+                <View style={styles.bulletItem}>
+                  <Text style={styles.bulletDot}>• </Text>
+                  <Text>
+                    <Text style={styles.blueBold}>{payment.firstHalf}% </Text>
+                    advance payment upon signing of this
+                    <Text style={styles.blackBold}> Agreement</Text>.
+                  </Text>
+                </View>
+
+                <View style={styles.bulletItem}>
+                  <Text style={styles.bulletDot}>• </Text>
+                  <Text>
+                    <Text style={styles.blueBold}>{payment.secondHalf}% </Text>
+                    upon completion of the service term or achievement of the
+                    <Text style={styles.blackBold}> growth target</Text>.
+                  </Text>
+                </View>
+              </>
+            ) : (
+              <>
+                <Text style={styles.paragraph}>
+                  <Text style={styles.blackBold}>Note:</Text> The full advance
+                  amount will be collected by the{" "}
+                  <Text style={styles.blackBold}>Consultant</Text> at the time
+                  of accepting the agreement by client.
+                </Text>
+              </>
+            )}
+
             <View style={styles.bulletItem}>
-              {" "}
-              <Text style={styles.bulletDot}>•</Text>{" "}
+              <Text style={styles.bulletDot}>• </Text>
               <Text>
-                {" "}
-                <Text style={styles.blueBold}>50%</Text> advance payment upon
-                signing of this <Text style={styles.blackBold}>Agreement</Text>.{" "}
-              </Text>{" "}
-            </View>{" "}
-            <View style={styles.bulletItem}>
-              {" "}
-              <Text style={styles.bulletDot}>•</Text>{" "}
-              <Text>
-                {" "}
-                <Text style={styles.blueBold}>50%</Text> upon completion of the
-                service term or achievement of the{" "}
-                <Text style={styles.blackBold}>growth target</Text>.{" "}
-              </Text>{" "}
-            </View>{" "}
-            <View style={styles.bulletItem}>
-              {" "}
-              <Text style={styles.bulletDot}>•</Text>{" "}
-              <Text>
-                {" "}
-                All payments shall be made via{" "}
-                <Text style={styles.blueBold}>bank transfer or UPI</Text> to the{" "}
+                All payments shall be made via
+                <Text style={styles.blueBold}> bank transfer or UPI</Text> to
+                the
                 <Text style={styles.blackBold}>
                   {" "}
-                  Consultant’s designated account{" "}
-                </Text>{" "}
-                .{" "}
-              </Text>{" "}
-            </View>{" "}
+                  Consultant’s designated account
+                </Text>
+                .
+              </Text>
+            </View>
           </View>
           <Text style={styles.sectionHeading}>
             {" "}
