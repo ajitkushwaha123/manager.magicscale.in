@@ -1,20 +1,14 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useFormik } from "formik";
 import * as Yup from "yup";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardContent,
-  CardFooter,
-} from "@/components/ui/card";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Upload, Send, Loader2 } from "lucide-react";
+import { Upload, Send, Loader2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { useEmail } from "@/store/hooks/useEmail";
 import FileUploadComponent from "./FileUpload";
@@ -23,8 +17,18 @@ import { useRouter } from "next/navigation";
 
 export default function MailForm() {
   const router = useRouter();
-  const { handleSend, loading } = useEmail();
+  const {
+    handleSend,
+    handleGenerateFromPdf,
+    loading,
+    generatedEmail,
+    handleRemoveGeneratedEmail,
+  } = useEmail();
+
+  const [aiLoading, setAiLoading] = useState(false);
   const [clearTrigger, setClearTrigger] = useState(false);
+  const subjectRef = useRef(null);
+  const messageRef = useRef(null);
 
   const formik = useFormik({
     initialValues: {
@@ -43,8 +47,21 @@ export default function MailForm() {
     }),
     onSubmit: async (values, { resetForm }) => {
       await handleEmail(values, resetForm);
+      handleRemoveGeneratedEmail();
     },
   });
+
+  useEffect(() => {
+    if (generatedEmail) {
+      formik.setValues((prev) => ({
+        ...prev,
+        subject: generatedEmail.subject || prev.subject,
+        message: generatedEmail.body
+          ? generatedEmail.body.replace(/\\n/g, "\n")
+          : prev.message,
+      }));
+    }
+  }, [generatedEmail]);
 
   const handleEmail = async (values, resetForm) => {
     try {
@@ -58,25 +75,53 @@ export default function MailForm() {
       };
 
       await handleSend({ data });
-
-      await new Promise((r) => setTimeout(r, 300));
-
       toast.success("✅ Email sent successfully!");
       resetForm();
       setClearTrigger((prev) => !prev);
-
       router.push("/web-mail/inbox");
+    } catch (error) {
+      console.error(error);
+      toast.error("❌ Something went wrong while sending the email.");
+    }
+  };
+
+  const handleWriteWithAI = async () => {
+    const file = formik.values.attachments?.[0];
+    if (!file) {
+      toast.error("Please upload a PDF document first!");
+      return;
+    }
+
+    try {
+      setAiLoading(true);
+      toast.message("✨ Thinking...", {
+        description: "AI is reading and analyzing your PDF...",
+      });
+
+      await handleGenerateFromPdf({
+        file,
+        prompt:
+          "Generate a professional and polite email draft based on this PDF document.",
+      });
+      toast.success("🎉 AI generated an email draft!");
     } catch (err) {
-      console.error("Email error:", err);
-      toast.error("Something went wrong while sending the email.");
+      console.error(err);
+      toast.error("AI generation failed. Try again later.");
+    } finally {
+      setAiLoading(false);
     }
   };
 
   return (
-    <form onSubmit={formik.handleSubmit} className="w-full">
+    <form
+      onSubmit={formik.handleSubmit}
+      className={`w-full transition-opacity duration-300 ${
+        aiLoading ? "opacity-70 pointer-events-none" : ""
+      }`}
+    >
       <Card className="border shadow-sm rounded-md bg-white overflow-hidden">
-        <CardContent className="p-5 space-y-4">
-          <div className="space-y-3">
+        <CardContent className="p-5 space-y-5">
+          <div className="space-y-4">
             <div>
               <Label className="text-sm font-medium text-gray-700">From</Label>
               <Input
@@ -99,7 +144,7 @@ export default function MailForm() {
             </div>
           </div>
 
-          <div>
+          <div ref={subjectRef}>
             <Label className="text-sm font-medium text-gray-700">Subject</Label>
             <Input
               name="subject"
@@ -107,7 +152,9 @@ export default function MailForm() {
               value={formik.values.subject}
               onChange={formik.handleChange}
               onBlur={formik.handleBlur}
-              className="focus-visible:ring-blue-500 my-2"
+              className={`focus-visible:ring-blue-500 my-2 ${
+                aiLoading ? "animate-pulse" : ""
+              }`}
             />
             {formik.touched.subject && formik.errors.subject && (
               <p className="text-xs text-red-500 mt-1">
@@ -116,7 +163,7 @@ export default function MailForm() {
             )}
           </div>
 
-          <div>
+          <div ref={messageRef}>
             <Label className="text-sm font-medium text-gray-700">Message</Label>
             <Textarea
               name="message"
@@ -125,7 +172,9 @@ export default function MailForm() {
               value={formik.values.message}
               onChange={formik.handleChange}
               onBlur={formik.handleBlur}
-              className="resize-none leading-relaxed my-2 focus-visible:ring-blue-500"
+              className={`resize-none leading-relaxed my-2 focus-visible:ring-blue-500 ${
+                aiLoading ? "animate-pulse" : ""
+              }`}
             />
             {formik.touched.message && formik.errors.message && (
               <p className="text-xs text-red-500 mt-1">
@@ -147,6 +196,25 @@ export default function MailForm() {
               }
               clearTrigger={clearTrigger}
             />
+
+            <Button
+              type="button"
+              onClick={handleWriteWithAI}
+              disabled={aiLoading}
+              className="mt-3 gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:opacity-90"
+            >
+              {aiLoading ? (
+                <>
+                  <Loader2 className="animate-spin" size={16} />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <Sparkles size={16} />
+                  Write with AI
+                </>
+              )}
+            </Button>
           </div>
         </CardContent>
 

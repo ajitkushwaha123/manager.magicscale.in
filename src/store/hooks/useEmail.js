@@ -4,17 +4,15 @@ import { useDispatch, useSelector } from "react-redux";
 import {
   fetchEmails,
   sendEmail,
-  setCurrentFolder,
-  selectEmail,
-  markAsRead,
-  deleteEmail,
+  generateEmailFromPdf,
+  removeGeneratedEmail,
 } from "@/store/slices/emailSlice";
 import { useCallback } from "react";
 
 export function useEmail() {
   const dispatch = useDispatch();
 
-  const { list, selectedEmail, loading, error, currentFolder } = useSelector(
+  const { list, selectedEmail, loading, error, generatedEmail } = useSelector(
     (state) => state.emails
   );
 
@@ -30,38 +28,26 @@ export function useEmail() {
     [dispatch]
   );
 
-  const setFolder = useCallback(
-    (folder) => dispatch(setCurrentFolder(folder)),
+  const handleGenerateFromPdf = useCallback(
+    async ({ file, prompt }) => {
+      return await dispatch(generateEmailFromPdf({ file, prompt })).unwrap();
+    },
     [dispatch]
   );
 
-  const select = useCallback(
-    (email) => dispatch(selectEmail(email)),
-    [dispatch]
-  );
-
-  const markRead = useCallback(
-    (emailId) => dispatch(markAsRead(emailId)),
-    [dispatch]
-  );
-
-  const remove = useCallback(
-    (emailId) => dispatch(deleteEmail(emailId)),
-    [dispatch]
-  );
+  const handleRemoveGeneratedEmail = useCallback(() => {
+    dispatch(removeGeneratedEmail());
+  }, [dispatch]);
 
   return {
     emails: list,
     selectedEmail,
     loading,
     error,
-    currentFolder,
-
+    generatedEmail,
     getEmails,
     handleSend,
-    setFolder,
-    select,
-    markRead,
-    remove,
+    handleGenerateFromPdf,
+    handleRemoveGeneratedEmail,
   };
 }

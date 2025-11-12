@@ -12,7 +12,6 @@ import {
   Download,
   MailPlus,
 } from "lucide-react";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";

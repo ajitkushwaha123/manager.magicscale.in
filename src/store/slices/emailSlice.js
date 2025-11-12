@@ -3,10 +3,10 @@ import axios from "axios";
 
 export const fetchEmails = createAsyncThunk(
   "emails/fetchAll",
-  async (coversationId, { rejectWithValue }) => {
+  async (conversationId, { rejectWithValue }) => {
     try {
       const res = await axios.get(
-        `/api/web-mail/conversation/${coversationId}`
+        `/api/web-mail/conversation/${conversationId}`
       );
       return res.data;
     } catch (err) {
@@ -20,7 +20,6 @@ export const sendEmail = createAsyncThunk(
   async ({ data, status = "sent" }, { rejectWithValue }) => {
     try {
       const formData = new FormData();
-
       formData.append("from", data.from || "");
       formData.append("subject", data.subject || "(no subject)");
       formData.append("text", data.text || "");
@@ -38,15 +37,32 @@ export const sendEmail = createAsyncThunk(
         `/api/web-mail/conversation/send-email`,
         formData,
         {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
+          headers: { "Content-Type": "multipart/form-data" },
         }
       );
-
       return res.data;
     } catch (err) {
       console.error("❌ Send Email Error:", err);
+      return rejectWithValue(err.response?.data || err.message);
+    }
+  }
+);
+
+export const generateEmailFromPdf = createAsyncThunk(
+  "emails/generateFromPdf",
+  async ({ file, prompt }, { rejectWithValue }) => {
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("prompt", prompt);
+
+      const res = await axios.post(`/api/web-mail/generate-email`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      return res.data;
+    } catch (err) {
+      console.error("❌ Gemini PDF Generate Error:", err);
       return rejectWithValue(err.response?.data || err.message);
     }
   }
@@ -59,27 +75,15 @@ const emailSlice = createSlice({
     selectedEmail: null,
     loading: false,
     error: null,
-    currentFolder: "sent",
+    generatedEmail: null,
   },
   reducers: {
-    setCurrentFolder: (state, action) => {
-      state.currentFolder = action.payload;
-    },
-    selectEmail: (state, action) => {
-      state.selectedEmail = action.payload;
-    },
-    markAsRead: (state, action) => {
-      const emailId = action.payload;
-      const email = state.list.find((e) => e._id === emailId);
-      if (email) email.isRead = true;
-    },
-    deleteEmail: (state, action) => {
-      state.list = state.list.filter((e) => e._id !== action.payload);
+    removeGeneratedEmail(state) {
+      state.generatedEmail = null;
     },
   },
   extraReducers: (builder) => {
     builder
-      // 📬 Fetch Emails
       .addCase(fetchEmails.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -101,11 +105,9 @@ const emailSlice = createSlice({
       })
       .addCase(sendEmail.fulfilled, (state, action) => {
         state.loading = false;
-
         const data = action.payload;
         const result = data?.result || null;
         const results = data?.results || [];
-
         if (result?.status === "draft") {
           const existing = state.list.find((e) => e._id === result.emailId);
           if (existing) Object.assign(existing, result);
@@ -119,11 +121,21 @@ const emailSlice = createSlice({
       .addCase(sendEmail.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+      })
+
+      .addCase(generateEmailFromPdf.pending, (state) => {
+        state.error = null;
+        state.generatedEmail = null;
+      })
+      .addCase(generateEmailFromPdf.fulfilled, (state, action) => {
+        state.generatedEmail = action.payload.data;
+      })
+      .addCase(generateEmailFromPdf.rejected, (state, action) => {
+        state.error = action.payload;
       });
   },
 });
 
-export const { setCurrentFolder, selectEmail, markAsRead, deleteEmail } =
-  emailSlice.actions;
+export const { removeGeneratedEmail } = emailSlice.actions;
 
 export default emailSlice.reducer;

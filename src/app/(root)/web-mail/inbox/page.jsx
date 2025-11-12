@@ -82,7 +82,7 @@ export default function InboxPage() {
                     <Button
                       variant="default"
                       size="sm"
-                      onClick={() => router.push("/mail-box/compose")}
+                      onClick={() => router.push("/web-mail/compose")}
                     >
                       Compose new message
                     </Button>
@@ -149,7 +149,7 @@ export default function InboxPage() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => router.push("/mail-box/compose")}
+                onClick={() => router.push("/web-mail/compose")}
               >
                 Compose
               </Button>
