@@ -1,21 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { pdf } from "@react-pdf/renderer";
 import dynamic from "next/dynamic";
 import { format } from "date-fns";
-
 import MagicScaleAgreementPDF from "@/components/document";
 import { AgreementSheet } from "@/components/global/agreement-sheet";
 
 const PDFPreviewer = dynamic(
   () => import("@/components/global/pdf-previewer"),
-  {
-    ssr: false,
-  }
+  { ssr: false }
 );
 
-// Utility: formats date with suffix (1st, 2nd, 3rd, etc.)
 function formatWithSuffix(date) {
   const day = date.getDate();
   const suffix =
@@ -30,8 +25,6 @@ function formatWithSuffix(date) {
 }
 
 export default function AgreementPreviewPage() {
-  const [downloading, setDownloading] = useState(false);
-
   const [client, setClient] = useState({
     name: "__________",
     address: "_____________________",
@@ -46,7 +39,6 @@ export default function AgreementPreviewPage() {
         new Date().getMonth() + 1
       )
     ),
-
     targetLowerBound: 60000,
     targetUpperBound: 80000,
     duration: "1",
@@ -54,18 +46,6 @@ export default function AgreementPreviewPage() {
     fee: 7000,
     paymentTerms: "advance",
   });
-
-  const handleAgreementSubmit = async (data) => {
-    setClient(data.client);
-    setAgreement(data.agreement);
-  };
-
-  const formattedAgreement = {
-    ...agreement,
-    date: format(agreement.date, "dd MMM yyyy").toUpperCase(),
-    start: formatWithSuffix(agreement.start),
-    end: formatWithSuffix(agreement.end),
-  };
 
   const COMPANY = {
     name: "Magicscale Restaurant Consultancy Services",
@@ -78,32 +58,22 @@ export default function AgreementPreviewPage() {
     signature: "/assets/signature.png",
   };
 
-  const [payment, setPayment] = useState({
+  const [payment] = useState({
     term: "advance",
     firstHalf: "50",
     secondHalf: "50",
   });
 
-  const handleDownload = async () => {
-    try {
-      setDownloading(true);
-      const blob = await pdf(
-        <MagicScaleAgreementPDF
-          company={COMPANY}
-          client={client}
-          agreement={formattedAgreement}
-        />
-      ).toBlob();
+  const handleAgreementSubmit = (data) => {
+    setClient(data.client);
+    setAgreement(data.agreement);
+  };
 
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `${client.name}-Service-Agreement.pdf`;
-      link.click();
-      URL.revokeObjectURL(url);
-    } finally {
-      setDownloading(false);
-    }
+  const formattedAgreement = {
+    ...agreement,
+    date: format(agreement.date, "dd MMM yyyy").toUpperCase(),
+    start: formatWithSuffix(agreement.start),
+    end: formatWithSuffix(agreement.end),
   };
 
   return (
@@ -113,16 +83,7 @@ export default function AgreementPreviewPage() {
           Agreement Preview
         </h1>
 
-        <div className="flex gap-3">
-          <AgreementSheet onSubmit={handleAgreementSubmit} />
-          <button
-            onClick={handleDownload}
-            disabled={downloading}
-            className="px-4 py-2 bg-[#1b1cfe] hover:bg-[#1516d9] text-white rounded-md font-medium shadow-md transition"
-          >
-            {downloading ? "Preparing..." : "Download PDF"}
-          </button>
-        </div>
+        <AgreementSheet onSubmit={handleAgreementSubmit} />
       </div>
 
       <div className="w-full max-w-6xl h-[85vh] border border-zinc-300 dark:border-zinc-800 rounded-lg overflow-hidden shadow-lg">
