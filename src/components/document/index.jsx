@@ -98,7 +98,7 @@ function CommonHeader({ date, company, client }) {
       <View style={styles.headerRow}>
         <Image src={company.logo} style={styles.logo} />
         <View style={styles.companyInfo}>
-          <Text>{company.address}</Text>
+          {/* <Text>{company.address}</Text> */}
           <Text>{company.phone}</Text>
           <Text>{company.website}</Text>
         </View>
@@ -239,9 +239,11 @@ export default function MagicScaleAgreementPDF({
           </Text>
 
           <Text style={styles.paragraph}>
-            <Text style={styles.blackBold}>Note:</Text> The Consultant shall not
-            be held responsible if food quality is not maintained or if high
-            customer complaints adversely impact sales.
+            <Text style={styles.blackBold}>Note :- </Text>
+            <Text style={{ color: "red", fontWeight: "bold" }}>
+              If the food quality or a rating above 3.8 is not maintained by the
+              client, then we are not responsible for achieving the target.
+            </Text>
           </Text>
         </View>
         <CommonFooter />
@@ -273,6 +275,11 @@ export default function MagicScaleAgreementPDF({
             The Client agrees to pay the Consultant a{" "}
             <Text style={styles.blueBold}>
               monthly service fee of {getAmount(agreement.fee)}
+            </Text>
+            <Text style={styles.paragraph}>
+              A <Text style={styles.blueBold}>weekly</Text> advertising budget
+              of <Text style={styles.blueBold}>₹1500</Text> for Zomato
+              promotions will be borne by the client.
             </Text>
           </Text>
           <Text style={[styles.paragraph, styles.blackBold]}>

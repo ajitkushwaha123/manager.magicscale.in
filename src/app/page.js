@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import { format } from "date-fns";
 import MagicScaleAgreementPDF from "@/components/document";
 import { AgreementSheet } from "@/components/global/agreement-sheet";
+import { pdf } from "@react-pdf/renderer";
 
 const PDFPreviewer = dynamic(
   () => import("@/components/global/pdf-previewer"),
@@ -48,9 +49,10 @@ export default function AgreementPreviewPage() {
   });
 
   const COMPANY = {
-    name: "Magicscale Restaurant Consultancy Services",
+    name: "Magic Scale Restaurant Consultant",
     logo: "/assets/logo.png",
-    address: "Near Air Force Camp, Rajokari, 110038",
+    address:
+      "3rd Floor, 599, opp. Chandra Garden, near Grand Westend Greens, Rajokri, New Delhi, Delhi 110038",
     phone: "+91 8826073117",
     website: "https://magicscale.in",
     representative: "Akash Verma",
@@ -76,6 +78,22 @@ export default function AgreementPreviewPage() {
     end: formatWithSuffix(agreement.end),
   };
 
+  const handleDownloadPDF = async () => {
+    const blob = await pdf(
+      <MagicScaleAgreementPDF
+        company={COMPANY}
+        client={client}
+        agreement={formattedAgreement}
+        payment={payment}
+      />
+    ).toBlob();
+
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `MAGIC_SCALE_AGREEMENT_${client.name}.pdf`;
+    link.click();
+  };
+
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-zinc-50 dark:bg-zinc-900 p-6">
       <div className="flex w-full max-w-6xl justify-between items-center mb-4">
@@ -83,7 +101,16 @@ export default function AgreementPreviewPage() {
           Agreement Preview
         </h1>
 
-        <AgreementSheet onSubmit={handleAgreementSubmit} />
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleDownloadPDF}
+            className="px-4 py-2 rounded-md bg-green-600 hover:bg-green-700 text-white"
+          >
+            Download PDF
+          </button>
+
+          <AgreementSheet onSubmit={handleAgreementSubmit} />
+        </div>
       </div>
 
       <div className="w-full max-w-6xl h-[85vh] border border-zinc-300 dark:border-zinc-800 rounded-lg overflow-hidden shadow-lg">
